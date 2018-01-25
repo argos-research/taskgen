@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<taskset>
+	<periodictask>
+		<offset>0</offset>
+		<id>2</id>
+		<period>0</period>
+		<config>
+			<arg1>126546</arg1>
+		</config>
+		<quota>1M</quota>
+		<priority>0</priority>
+		<executiontime>999999999999</executiontime>
+		<pkg>hey</pkg>
+		<criticaltime>0</criticaltime>
+	</periodictask>
+</taskset>
