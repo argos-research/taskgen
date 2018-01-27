@@ -90,13 +90,12 @@ differ in milliseconds, seconds, usw. This will change soon.
 
 | Key | Type | Description |
 | --- | --- | --- |
-| `period` | Integer | Time between one and the next execution of a job. The value `0` lead to a single job executions. *Unit: seconds* |
-| `numberofjobs` | Integer | Number of jobs. This value is currently ignored. |
+| `period` | Integer | Time between one and the next execution of a job. The value `0` lead to a single job executions. Every other value will forces an endless execution every `period` seconds. *Unit: seconds* |
 
 ### Schedulability
 
 | Key | Type | Description |
 | --- | --- | --- |
 | `priority` | Integer | The priority of the task. Possible values: `0 - 128`. This attribute sets the scheduler algorithm to **fixed priority**. |
-| `deadline` | Integer | Deadline until the job should be terminated. If the job lasts longer, the job is **not** terminated. This attribute chooses **earliest deadline first** scheduling and the `priority` attribute is ignored by `genode-Taskloader`. *Unit: milliseconds*. |
+| `deadline` | Integer | Deadline until the job should be terminated. If the job lasts longer, the job is **not** terminated. This attribute chooses **earliest deadline first** scheduling and the `priority` attribute is ignored by `genode-Taskloader`. *Unit: microseconds*. |
 
