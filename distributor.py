@@ -341,9 +341,6 @@ class _WrapperSession(threading.Thread):
     Keep in mind, the usage of this class is not intended outside of this
     module.
 
-    Due to the internal character of this class, methods and parameters are not
-    described in more detail. 
-
     Tasks of thes calls: 
     * Keep each session asyncron 
     * Handle raising errors. The whole processing of variants should not stop
@@ -351,7 +348,25 @@ class _WrapperSession(threading.Thread):
 
     """
     def __init__ (self, host, port, close, session_class, pool, sessions):
-        
+        """Initialize the _WrapperSession
+
+        :param host str: ip address of target-plattform
+
+        :param port int: port of target-plattform
+
+        :param close threading.Event: Event object to notify the `_WrapperSession`
+        to close. This object is shared between all `_WrapperSession` objects.
+
+        :param session_class AbstractSession: Session class, which should be wrapped.
+
+        :param pool list: list object for all unavailable hosts. If this session
+        is terminated, the host string will be pushed to this list.
+
+        :param sessions list:list object for all active sessions. If this
+        session is terminated, it will be removed from this list.
+
+        """
+
         super().__init__()
         self._host = host
         self._port = port
@@ -363,10 +378,14 @@ class _WrapperSession(threading.Thread):
         self._session_class = session_class
         self._logger = logging.getLogger("Distributor({})".format(host))
         self._session_params = ()
+        # current processed task-set
         self._taskset = None
+        # current state of processing
         self._running = False
         self._restart_lock = threading.Lock()
+        # trigger for starting/stopping 
         self._run = False
+        # trigger for restarting
         self._restart = False
 
     def thread_start(self):
@@ -376,13 +395,29 @@ class _WrapperSession(threading.Thread):
         threading.Thread.start(self)
 
     def wait_stopped(self):
+        """Waits until processing of the current task-set stopped"""
         while self._running and self._run and not self._close.is_set():
             time.sleep(0.5)
 
     def start(self, tasksets, *session_params):
+        """start processing a new list of task-sets
+        
+        :param tasksets _TaskSetQueue: The TaskSet-Queue which holds the actual
+        generator function for task-sets.  
+
+        :param *session_params: Any further parameters are passed to the `start`
+        method of the wrapped session.
+
+        """
+
+        # it is important to set all parameter at once, otherwise the session
+        # might start sending a new task-set with wrong session_params. Due to
+        # that fact, there is a lock for protecting.
         with self._restart_lock:
             self._tasksets = tasksets
             self._session_params = session_params
+
+            # triggering a restart is done by enabling `_restart` and `_run`.
             self._restart = True
             self._run = True
 
@@ -393,29 +428,35 @@ class _WrapperSession(threading.Thread):
     def _internal_start(self, session):
         """Called, whenever a new task-set should be processed.
         
-        Workflow:
-        1. try to get a new task-set.
-        2. Task-set is handled over to Session
-        3. Inform monitor about the next task-set
-        4. Set state to `running`.
-
+        :param session session.AbstractSession: Wrapped session object
+        
         """
         try:
+            # lets fetch the task-set queue and optional session parameters
             with self._restart_lock:
                 tasksets = self._tasksets
                 params = self._session_params
-                
+
+            # try to get a new task-set from queue, other `StopIteration` is raised.
             self._taskset = tasksets.get()
+
+            # handle of task-set to session and start processing
             session.start(self._taskset, *params)
+
+            # inform the monitor about the start.
             if self.monitor is not None:
                 self.monitor.__taskset_start__(self._taskset)
                 
             self._logger.debug("Taskset variant processing started.")
+
+            # update internal state.
             self._restart = False
             self._running = True
         except StopIteration:
-            # all tasksets are processed
+            # the task-set queue is empty.
             self._logger.debug("All taskset variants are processed")
+
+            # update internal state
             self._running = False
             self._restart = False
             self._taskset = None
@@ -423,43 +464,88 @@ class _WrapperSession(threading.Thread):
 
     def _internal_stop(self, session):
         """Called, whenever the distributor is stopping.
-
-        Workflow:
-        1. Session is stopped.
-        2. Inform monitor about the stop.
-        3. Set state to stopped`.
+        
+        :param session: Wrapped session object 
 
         """
+
+        # stop session
         session.stop()
+
+        
         if self._taskset is not None :
+            # a task-set is in process. So inform the monitor about the stop
             if self.monitor is not None:
                 self.monitor.__taskset_stop__(self._taskset)
+
+            # the task-set is pushed back to the task-set queue. So another session
+            # can pull it and process it.
             self._tasksets.put(self._taskset)
             self._taskset = None
+        # update internal state
         self._running = False
 
         
     def _internal_update_handling(self, session):
+        """Called multiple times during task-set processing
         
-        # let session update the task-set
+        This method handles incoming events, notifies the monitor about the
+        progress and finally checks the processing status of the task-set. If
+        the task-set is finished (processing is done), `False` will be returned
+        and this method will not be called anymore.
+
+        :param session: Wrapped session object 
+
+        :return: `True` if the task-set is not finished and this method should
+        be called again, otherwise `False` 
+
+        :rtype: bool
+
+        """
+
+        # Finally incoming events are not directly handled here, but the
+        # session.run() takes care it. If the session updated the task-set during
+        # calling, the monitor is notified about the change.
         taskset_changed = session.run(self._taskset)
         if taskset_changed:
             if self.monitor is not None:
                 self.monitor.__taskset_event__(self._taskset)
 
-        # is taskset still running
+        # check if the task-set is finished or is still running
         target_running = session.is_running(self._taskset)
         if not target_running:
             if self.monitor is not None:
                 self.monitor.__taskset_finish__(self._taskset)
-            self._tasksets.done(self._taskset)  # notify about the finished taskset
+
+            # The task-set is finished and the queue (`_tasksets`) is notified
+            # about the processed task-set. This is important, because
+            # `tasksets` keeps track of currently processed task-sets.
+            self._tasksets.done(self._taskset) 
             self._logger.debug("Taskset variant is successfully processed")
-            
+        
         return target_running
 
     
     def run(self):
-        # try to connect
+        """if the thread starts, this method will be called once.
+
+        The main-loop for fetching and distributing task-sets is implemented here.
+        
+
+        A simplification of the implementation looks like that:
+
+        while True:
+            _internal_start()
+
+            processing=True
+            while processing:
+                processing = _internal_update_handling()
+
+            _internal_stop()
+
+        """
+
+        # at first, a connection to the target-plattform (_host, _port) is established.
         try:
             session = self._session_class(self._host, self._port)
             self._logger.info("Connection established.")
@@ -469,41 +555,62 @@ class _WrapperSession(threading.Thread):
                 # network. that's ok and the error is handled silently.
                 self._logger.debug(e)
             else:
+                # otherwise a bigger problem occured
                 self._logger.critical(e)
                 self._pool.put(self._host)
+
+            # in any case, the thread will stop and the session is unusable.
             return
 
+        # The connection is established and the loop for fetching and
+        # distributing a task-set starts
         try:
+
+            # this will continue until the user or distributor sets the close-flag.
             while not self._close.is_set():
-                # stopping
+
+                # if the session is running and should stop
                 if not self._run and self._running:
+                    # stop it.
                     self._internal_stop(session, taskset)
-                # restart or still running
+
+                # if the session should restart or is still running
                 if self._restart or self._running:
-                    # try to start next taskset
+                    # try to start
                     self._internal_start(session)
 
-                    # live requests
+                    # well, the session is running a task-set is delivered and
+                    # events are incoming. Let's handle them. Events are handled
+                    # as long as there is no closed-flag set and no restart
+                    # requested.
                     while (not self._close.is_set() and not self._restart and
                            self._run and self._running):
+
+                        # continue handling events until the session notifies
+                        # about a stop.
                         if not self._internal_update_handling(session):
                             break
-                # idle
+
                 elif not self._running:
+                    # idle state
                     time.sleep(0.1)
                 else:
                     self._logger.critical("Reached some unknown state")
                     time.sleep(0.1)
 
+            # the session is closing and the target-plattform is stopped.
             self._internal_stop(session)
         except socket.error as e:
+            # an error occured and is handled now
             self._logger.critical(e)
-            
+
             if self._taskset is not None:
+                # the error occured during the task-set processing. The task-set
+                # is pushed back to the task-set queue.
                 self._tasksets.put(self._taskset)
                 self._logger.debug("Taskset variant is pushed back to queue due to" +
                                    " a critical error")
-                # notify live handler about the stop.
+                # notify monitor about the unprocessed task-set
                 if self.monitor is not None:
                     self.monitor.__taskset_stop__(self._taskset)
 
