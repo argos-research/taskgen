@@ -26,4 +26,4 @@ robomongo:
 	wget https://download.robomongo.org/0.8.5/linux/robomongo-0.8.5-x86_64.deb
 	sudo dpkg -i robomongo-0.8.5-x86_64.deb
 	rm -rf robomongo-0.8.5-x86_64.deb
-	@echo "Execute `robomongo` in the terminalgg
+	@echo "Execute `robomongo` in the terminal"
