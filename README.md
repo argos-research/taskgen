@@ -10,13 +10,17 @@ component.
 Only Ubuntu 16.04 with the default python version 3.5 is supported.
 
 ```
+git clone https://github.com/argos-research/taskgen.git
+cd taskgen
 make install
 ```
 
-If you want to use the MongoDB backend:
+If you want to use the MongoDB backend & RoboMongo:
 
 ```
+make mongodb
 sudo service mongod start
+make robomongo
 ```
 
 

@@ -1,11 +1,11 @@
 # Only Ubuntu 16.04 and python 3.5 are supported by taskgen.
 
-install: taskgen mongodb
+install: taskgen
 
 taskgen:
 	sudo apt-get update
 	sudo apt-get install python3 python3-pip
-	pip3 install --user -r ./taskgen/requirements.txt
+	pip3 install --user -r requirements.txt
 
 # mongodb community edition
 # https://docs.mongodb.com/manual/tutorial/install-mongodb-on-ubuntu/
@@ -19,3 +19,11 @@ mongodb:
 	sudo apt-get install -y mongodb-org
 	@echo "MongoDB is not started automatically. If you want to use MongoDB, please run:"
 	@echo "sudo service mongod start|stop"
+
+
+# GUI editor for MongoDB
+robomongo:
+	wget https://download.robomongo.org/0.8.5/linux/robomongo-0.8.5-x86_64.deb
+	sudo dpkg -i robomongo-0.8.5-x86_64.deb
+	rm -rf robomongo-0.8.5-x86_64.deb
+	@echo "Execute `robomongo` in the terminalgg
