@@ -19,12 +19,12 @@ from collections.abc import Mapping
 from ipaddress import ip_network, ip_address
 from itertools import chain
 from math import ceil
+import errno
 
 from taskgen.taskset import TaskSet
 from taskgen.monitor import AbstractMonitor
 from taskgen.session import AbstractSession
 from taskgen.sessions.genode import PingSession
-
 
 
 class Distributor:
@@ -464,9 +464,14 @@ class _WrapperSession(threading.Thread):
             session = self._session_class(self._host, self._port)
             self._logger.info("Connection established.")
         except socket.error as e:
-            self._logger.critical(e)
-            self._pool.put(self._host)
-            return 
+            if e.errno == errno.ECONNREFUSED:
+                # connection refused. there might be other computers in the
+                # network. that's ok and the error is handled silently.
+                self._logger.debug(e)
+            else:
+                self._logger.critical(e)
+                self._pool.put(self._host)
+            return
 
         try:
             while not self._close.is_set():
