@@ -5,30 +5,20 @@ A taskset generation framework for the
 component.
 
 
-
 # Installation
-
-## Python3.5
 
 Only Ubuntu 16.04 with the default python version 3.5 is supported.
 
 ```
-sudo apt-get install python3 python3-pip
+make install
 ```
 
-## (Optional) MongoDB
-
-Please follow external [Installation Guide](https://docs.mongodb.com/manual/tutorial/install-mongodb-on-ubuntu/)
-
-
-## Toolchain
+If you want to use the MongoDB backend:
 
 ```
-git clone --branch taskgen https://github.com/pecheur/toolchain-host.git
-cd toolchain-host
-git checkout tags/v1.0 
-pip3 install --user -r ./taskgen/requirements.txt
+sudo service mongod start
 ```
+
 
 # Getting started
 
