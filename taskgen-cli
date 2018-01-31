@@ -1,0 +1,3 @@
+#!/bin/bash
+cd .. # python module-calling does not support relative paths
+python3.5 -m taskgen $@

@@ -121,8 +121,14 @@ class GenodeSession(AbstractSession):
         try:
             events = profile['profile']['events']['event']
 
+            # it is possible, that only a single event is in events, which is
+            # not be formated in a list. But we exspect a list.
+            if not isinstance(events, list):
+                events = [events]
+
+            # iterate over all events
             for event in events:
-                print(event)
+
                 _task_id = int(event['@task-id'])
                 _type = event['@type']
                 _timestamp = int(event['@time-stamp'])

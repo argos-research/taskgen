@@ -76,7 +76,7 @@ differ in milliseconds, seconds, usw. This will change soon.
 | --- | --- | --- |
 | `id` | Integer | Every task is identifed by an unique ID. if the task is appended to a `TaskSet`, this value will be set automatically. |
 | `criticaltime` | Integer | Life time of a task. The task is killed by passing this time. The value `0` sets life time to infinite. *Unit: milliseconds* |
-| `executiontime` | Integer | This attribute has no purpose but it is necessary to provide a value. Default value: `999999999` *Unit: unknown* |
+| `executiontime` | Integer | This attribute has no purpose but it is necessary to provide a value. Default value: `999999999` *Unit: milliseconds* |
 
 ### Binary
 
@@ -90,8 +90,7 @@ differ in milliseconds, seconds, usw. This will change soon.
 
 | Key | Type | Description |
 | --- | --- | --- |
-| `period` | Integer | Time between one and the next execution of a job. The value `0` lead to a single job executions. *Unit: seconds* |
-| `numberofjobs` | Integer | Number of jobs. This value is currently ignored. |
+| `period` | Integer | Time between one and the next execution of a job. The value `0` lead to a single job executions. Every other value will forces an endless execution every `period` seconds. *Unit: milliseconds* |
 
 ### Schedulability
 

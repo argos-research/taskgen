@@ -21,8 +21,7 @@ class Hey0TaskSet(TaskSet):
             "pkg" : "hey",
             "config" : {},
             # frequency
-            "period" : 2000,
-            "numberofjobs" : 0,
+            "period" : 0,
             # schedular
             "priority" : 10,
         })
@@ -40,8 +39,8 @@ class Hey1TaskSet(TaskSet):
         super().__init__()
         task = Task(
             hey.HelloWorld,  # fills `pkg`, `config`, `executiontime` and `quota`
-            priority.Custom(100), # fills `priority`
-            period.Custom(5) # fills period
+            priority.Value(100), # fills `priority`
+            period.Value(0) # fills period
         )
         self.append(task)
         
@@ -55,8 +54,8 @@ class Hey2TaskSet(BlockTaskSet):
     def __init__(self):
         super().__init__(
             hey.HelloWorld,
-            priority.Custom(100),
-            period.Custom(5)
+            priority.Value(100),
+            period.Value(0)
         )
 
 
@@ -71,8 +70,8 @@ class Hey3TaskSet(BlockTaskSet):
     def __init__(self):
         super().__init__(
             hey.HelloWorld,
-            priority.Custom(100),
-            [period.Custom(5), period.Custom(10)]
+            priority.Value(100),
+            [period.Value(0), period.Value(5)]
         )
 
         
@@ -87,8 +86,8 @@ class Hey4TaskSet(BlockTaskSet):
     def __init__(self):
         super().__init__(
             hey.HelloWorld,
-            [priority.Custom(100), priority.Custom(100)],
-            [period.Custom(5), period.Custom(10)]
+            [priority.Value(100), priority.Value(100)],
+            [period.Value(0), period.Value(5)]
         )
 
         
@@ -105,7 +104,7 @@ class Hey5TaskSet(BlockTaskSet):
         super().__init__(
             hey.HelloWorld,
             priority.Random,
-            period.Custom(5)
+            period.Value(5)
         )
 
 class Hey6TaskSet(BlockTaskSet):
@@ -121,7 +120,7 @@ class Hey6TaskSet(BlockTaskSet):
         super().__init__(
             hey.HelloWorld,
             priority.Variants,
-            period.Custom(5)
+            period.Value(0)
         )
 
 class Hey7TaskSet(BlockTaskSet):
@@ -146,8 +145,8 @@ class Hey8TaskSet(TaskSet):
         for x in range(10):
             task = Task(
                 hey.HelloWorld,
-                priority.Custom(100),
-                period.Custom(5)
+                priority.Value(100),
+                period.Value(0)
             )
             self.append(task)
 
@@ -163,7 +162,7 @@ class Hey9TaskSet(TaskSet):
             task = Task(
                 hey.HelloWorld,
                 priority.Random,
-                period.Custom(5)
+                period.Value(0)
             )
             self.append(task)
 
